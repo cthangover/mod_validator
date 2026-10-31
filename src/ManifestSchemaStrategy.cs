@@ -12,8 +12,8 @@ namespace Cthangover.Validator
     /// to the filesystem entry name for a missing id and tolerates a missing
     /// version, so these are exactly the problems an author should fix before
     /// publishing.
-    /// A mounted test suite (<c>&lt;host&gt;__&lt;suite&gt;</c>) is exempt from the id and version rule: the mount
-    /// gives it the virtual id and the host's version, so its own manifest leaves them out by design.
+    /// A mounted test suite or integration (<c>&lt;host&gt;__&lt;id&gt;</c>) is exempt from the id and version rule: the
+    /// mount gives it the virtual id and the host's version, so its own manifest leaves them out by design.
     /// </summary>
     public class ManifestSchemaStrategy : IValidationStrategy
     {
@@ -25,6 +25,9 @@ namespace Cthangover.Validator
         /// <summary>Checks the required manifest.json fields: non-empty string id and string version.</summary>
         public void Validate(ValidationContext context)
         {
+            var integrations = context.Mods.OfType<ModInfo>()
+                .SelectMany(host => (host.Manifest?.Integrations ?? new()).Select(i => ModTestSuites.ModIdOf(host.Id, i?.Id)))
+                .ToHashSet(System.StringComparer.OrdinalIgnoreCase);
             foreach (var mod in context.Mods)
             {
                 context.ThrowIfCancellationRequested();
@@ -49,7 +52,7 @@ namespace Cthangover.Validator
 
                 using (document)
                 {
-                    var suite = ModTestSuites.ActiveIds.Contains(mod.Id);
+                    var suite = ModTestSuites.ActiveIds.Contains(mod.Id) || integrations.Contains(mod.Id);
                     ValidateStringField(context, mod.Id, document.RootElement, "id", required: !suite);
                     ValidateStringField(context, mod.Id, document.RootElement, "version", required: !suite);
                     ValidateStringField(context, mod.Id, document.RootElement, "name", required: false);

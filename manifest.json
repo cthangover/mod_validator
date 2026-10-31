@@ -6,5 +6,6 @@
   "description": "Checks every mod without running the game: broken references, unknown scenario commands, wrong parameters, missing dependencies — a report on every game start.",
   "category": "debug",
   "sources": ["src/**/*.cs"],
+  "test_sources": ["tests/*.cs"],
   "depends": ["dialog_base>=1", "interactive_base>=1", "schema_base>=1"]
 }

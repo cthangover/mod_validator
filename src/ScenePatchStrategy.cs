@@ -45,7 +45,7 @@ namespace Cthangover.Validator
             {
                 context.ThrowIfCancellationRequested();
 
-                var provider = mod.FileProvider;
+                var provider = NestedFolders.Visible(mod);
                 if (provider == null)
                     continue;
 
@@ -65,7 +65,7 @@ namespace Cthangover.Validator
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var mod in context.Mods)
             {
-                var provider = mod.FileProvider;
+                var provider = NestedFolders.Visible(mod);
                 if (provider == null)
                     continue;
 

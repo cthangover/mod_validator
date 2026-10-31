@@ -70,7 +70,7 @@ namespace Cthangover.Validator
         private static List<(string Path, string Source)> CollectSources(IModInfo mod)
         {
             var result = new List<(string Path, string Source)>();
-            var provider = mod.FileProvider;
+            var provider = NestedFolders.Visible(mod);
             if (provider == null)
                 return result;
 

@@ -39,7 +39,7 @@ namespace Cthangover.Validator
             {
                 context.ThrowIfCancellationRequested();
 
-                var provider = mod.FileProvider;
+                var provider = NestedFolders.Visible(mod);
                 if (provider == null)
                     continue;
 

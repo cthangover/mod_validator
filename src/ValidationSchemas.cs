@@ -4,6 +4,7 @@ namespace Cthangover.Validator
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using Cthangover.Core.Mods;
     using Cthangover.Mods.Schemas;
 
     /// <summary>
@@ -26,7 +27,7 @@ namespace Cthangover.Validator
         {
             foreach (var mod in context.Mods.Where(m => m.FileProvider != null))
             {
-                foreach (var file in ModFileReader.ListFiles(mod.FileProvider, "schemas", true).Where(f => f.EndsWith(".json", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.Ordinal))
+                foreach (var file in ModFileReader.ListFiles(NestedFolders.Visible(mod), "schemas", true).Where(f => f.EndsWith(".json", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.Ordinal))
                     yield return (mod.Id, file, ModFileReader.ReadResolved(mod.FileProvider, file));
             }
         }

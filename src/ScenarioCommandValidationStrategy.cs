@@ -51,7 +51,7 @@ namespace Cthangover.Validator
             {
                 context.ThrowIfCancellationRequested();
 
-                var provider = mod.FileProvider;
+                var provider = NestedFolders.Visible(mod);
                 if (provider == null)
                     continue;
 
@@ -276,6 +276,10 @@ namespace Cthangover.Validator
             IScenarioCommandSpec spec,
             HashSet<string> labels)
         {
+            var argumentError = spec.ValidateArguments(positional, named, arrowTarget);
+            if (!string.IsNullOrEmpty(argumentError))
+                context.AddError("SCENARIO_INVALID_ARGUMENT", $"'{command}': {argumentError}", mod.Id, file, line);
+
             var argumentCount = positional.Count + named.Count;
             if (argumentCount == 0 && !string.IsNullOrEmpty(arrowTarget))
                 argumentCount = 1;
@@ -302,7 +306,7 @@ namespace Cthangover.Validator
             {
                 foreach (var name in required)
                 {
-                    if (!named.TryGetValue(name.ToLowerInvariant(), out var value) || string.IsNullOrWhiteSpace(value))
+                    if (!named.TryGetValue(spec.PreserveNamedArgumentCase ? name : name.ToLowerInvariant(), out var value) || string.IsNullOrWhiteSpace(value))
                         context.AddError("SCENARIO_MISSING_ARGUMENT",
                             $"'{command}' requires named argument '{name}'",
                             mod.Id, file, line);

@@ -20,7 +20,10 @@ namespace Cthangover.Validator
     ///   scenes, items…), which <see cref="ReferenceStrategy"/> reports when undeclared;</item>
     /// <item>other described commands: positional values and their references (a check's stat);</item>
     /// <item>entities of described kinds: references in fields, in list elements (a trait's
-    ///   <c>Stat</c>) and in map keys (a character's <c>Stats</c>).</item>
+    ///   <c>Stat</c>) and in map keys (a character's <c>Stats</c>);</item>
+    /// <item>entries of <c>patches/&lt;kind&gt;</c> files of described kinds: field names with their
+    ///   operations, value shapes, <c>$add</c>/<c>$remove</c> only on lists
+    ///   (<see cref="SchemaPatchChecker"/>).</item>
     /// </list>
     /// Kinds no other strategy declares (shops, stats, archetypes, equipment slots…) are
     /// declared here from the mods' data, so their references can be checked and the
@@ -57,12 +60,17 @@ namespace Cthangover.Validator
             foreach (var (mod, list) in entities)
             {
                 context.ThrowIfCancellationRequested();
-                foreach (var file in ModFileReader.ListFiles(mod.FileProvider, "scenarios", true).Where(f => f.EndsWith(".scenario", StringComparison.OrdinalIgnoreCase)))
+                foreach (var file in ModFileReader.ListFiles(NestedFolders.Visible(mod), "scenarios", true).Where(f => f.EndsWith(".scenario", StringComparison.OrdinalIgnoreCase)))
                     CheckScenario(context, catalog, mod, file, declared, ownKinds);
                 foreach (var (file, kind, entity) in list)
                 {
                     if (catalog.Kinds.TryGetValue(kind, out var schema))
                         CheckEntity(context, mod, file, schema, entity, ownKinds.Contains(kind) ? declared : ownKinds);
+                }
+                foreach (var (file, kind, patch) in Patches(mod))
+                {
+                    if (catalog.Kinds.TryGetValue(kind, out var schema))
+                        Report(context, SchemaPatchChecker.Check(schema, patch), mod.Id, file, 0);
                 }
             }
         }
@@ -117,6 +125,7 @@ namespace Cthangover.Validator
                 }
                 else if (command != null && command != "action" && catalog.Commands.TryGetValue(command, out var schema))
                 {
+                    (ScenarioCommandStrategyFactory.Get(command) as IScenarioCommandSpec)?.NormalizeArguments(positional, named);
                     Report(context, SchemaChecker.CheckPositional(command, schema.Positional, positional, null), mod.Id, file, lineNumber);
                     // The commands' own strategies already reference their scenes and resources;
                     // only kinds the schemas brought in are referenced here.
@@ -181,7 +190,7 @@ namespace Cthangover.Validator
 
         private static IEnumerable<(string File, string Kind, JsonElement Entity)> Entities(IModInfo mod)
         {
-            foreach (var file in ModFileReader.ListFiles(mod.FileProvider, string.Empty, true).Where(IsDataFile))
+            foreach (var file in ModFileReader.ListFiles(NestedFolders.Visible(mod), string.Empty, true).Where(IsDataFile))
             {
                 JsonDocument doc;
                 try
@@ -200,6 +209,36 @@ namespace Cthangover.Validator
                         continue;
                     foreach (var entity in items.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).ToList())
                         yield return (file, kind.GetString(), entity.Clone());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Entries of <c>patches/&lt;kind&gt;.json</c> and <c>patches/&lt;kind&gt;/**.json</c> — the files
+        /// <c>PatchResolver</c> reads; the kind comes from the path.
+        /// </summary>
+        private static IEnumerable<(string File, string Kind, JsonElement Patch)> Patches(IModInfo mod)
+        {
+            foreach (var file in ModFileReader.ListFiles(NestedFolders.Visible(mod), "patches", true).Where(f => f.EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
+            {
+                var relative = file.StartsWith("patches/", StringComparison.OrdinalIgnoreCase) ? file.Substring("patches/".Length) : file;
+                var slash = relative.IndexOf('/');
+                var kind = slash >= 0 ? relative.Substring(0, slash) : relative.Substring(0, relative.Length - ".json".Length);
+                JsonDocument doc;
+                try
+                {
+                    doc = JsonDocument.Parse(ModFileReader.ReadResolved(mod.FileProvider, file) ?? string.Empty);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+                using (doc)
+                {
+                    if (doc.RootElement.ValueKind != JsonValueKind.Object || !TryGet(doc.RootElement, "Items", out var items) || items.ValueKind != JsonValueKind.Array)
+                        continue;
+                    foreach (var patch in items.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).ToList())
+                        yield return (file, kind, patch.Clone());
                 }
             }
         }
