@@ -1,4 +1,7 @@
 using Cthangover.Core.Mods;
+using Cthangover.Core.Bootstrap;
+using System.Threading.Tasks;
+using Godot;
 
 namespace Cthangover.Validator
 {
@@ -34,12 +37,17 @@ namespace Cthangover.Validator
         /// </summary>
         public void OnModResourcesReady()
         {
+            ApplicationExit.Preparing -= PrepareExit;
+            ApplicationExit.Preparing += PrepareExit;
             ValidatorService.Start();
         }
+
+        private static Task PrepareExit(SceneTree tree) => ValidatorService.StopAsync();
 
         /// <summary>Stops the background pass while the validator's types are still alive.</summary>
         public void OnModUnloading()
         {
+            ApplicationExit.Preparing -= PrepareExit;
             ValidatorService.Stop();
         }
 

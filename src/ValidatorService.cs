@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Cthangover.Core.Factories.Impls;
 using Cthangover.Core.Mods;
 using Cthangover.Core.Utils;
+using Cthangover.Core.Bootstrap;
 
 namespace Cthangover.Validator
 {
@@ -58,6 +59,8 @@ namespace Cthangover.Validator
         /// </summary>
         public static void Start()
         {
+            if (ApplicationExit.IsQuitting)
+                return;
             ValidatorSettings.Reload();
 
             if (!ValidatorSettings.Enabled || !ValidatorSettings.RunOnStart)
@@ -110,6 +113,16 @@ namespace Cthangover.Validator
             catch (AggregateException)
             {
                 // Run logs its own failures; a cancelled pass is the expected outcome here.
+            }
+        }
+
+        /// <summary>Cancels the validation worker and joins it asynchronously while the engine is still alive.</summary>
+        public static Task StopAsync()
+        {
+            lock (stateLock)
+            {
+                cancellation?.Cancel();
+                return pass ?? Task.CompletedTask;
             }
         }
 
@@ -210,6 +223,7 @@ namespace Cthangover.Validator
             GameLogger.Log("VALIDATOR", $"validator: running {strategies.Count} strategy(ies)");
             foreach (var strategy in strategies)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!IsFeatureEnabled(strategy.Feature))
                 {
                     GameLogger.Log("VALIDATOR", $"validator: strategy {strategy.Id} skipped, feature {strategy.Feature} disabled", LogLevel.Debug);
