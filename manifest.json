@@ -7,5 +7,5 @@
   "category": "debug",
   "sources": ["src/**/*.cs"],
   "test_sources": ["tests/*.cs"],
-  "depends": ["dialog_base>=1", "interactive_base>=1", "schema_base>=1"]
+  "depends": ["dialog_base>=0.1.0", "interactive_base>=0.1.0", "schema_base>=0.1.0"]
 }
