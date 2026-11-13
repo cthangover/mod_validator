@@ -52,6 +52,12 @@ namespace Cthangover.Validator
 
                 using (document)
                 {
+                    var categories = JsonReadHelper.GetProperty(document.RootElement, "categories");
+                    if (categories.HasValue)
+                    {
+                        try { ModCategories.Read(categories.Value); }
+                        catch (JsonException error) { context.AddError("SCHEMA_WRONG_TYPE", error.Message, mod.Id, "manifest.json"); }
+                    }
                     var suite = ModTestSuites.ActiveIds.Contains(mod.Id) || integrations.Contains(mod.Id);
                     ValidateStringField(context, mod.Id, document.RootElement, "id", required: !suite);
                     ValidateStringField(context, mod.Id, document.RootElement, "version", required: !suite);
