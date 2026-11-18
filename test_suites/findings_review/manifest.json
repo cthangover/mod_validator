@@ -1,0 +1,16 @@
+{
+  "id": "validator__findings_review",
+  "name": "Selected-game validator contract regressions",
+  "version": "0.1.0",
+  "author": "ct",
+  "description": "Only new source/schema/provider-boundary/dependency and selected Ognishchanin validation checks; inactive without its own activation.",
+  "depends": [
+    "validator>=0.1.0",
+    "tools_base>=0.1.0",
+    "world_stream3d_editor>=0.1.0"
+  ],
+  "sources": [],
+  "test_sources": [
+    "tests/*.cs"
+  ]
+}

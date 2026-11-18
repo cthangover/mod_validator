@@ -3,9 +3,27 @@
   "name": "Validator",
   "version": "0.1.0",
   "author": "ct",
-  "description": "Checks every mod without running the game: broken references, unknown scenario commands, wrong parameters, missing dependencies — a report on every game start.",
-  "categories": ["debug"],
-  "sources": ["src/**/*.cs"],
-  "test_sources": ["tests/*.cs"],
-  "depends": ["dialog_base>=0.1.0", "interactive_base>=0.1.0", "schema_base>=0.1.0"]
+  "description": "Checks every mod without running the game: broken references, unknown scenario commands, wrong parameters, missing dependencies \u2014 a report on every game start.",
+  "categories": [
+    "debug"
+  ],
+  "sources": [
+    "src/**/*.cs"
+  ],
+  "test_sources": [
+    "tests/*.cs"
+  ],
+  "depends": [
+    "dialog_base>=0.1.0",
+    "interactive_base>=0.1.0",
+    "schema_base>=0.1.0"
+  ],
+  "test_suites": [
+    {
+      "id": "findings_review",
+      "activate": [
+        "--itest=validator_findings_review"
+      ]
+    }
+  ]
 }

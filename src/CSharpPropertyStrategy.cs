@@ -1,12 +1,14 @@
-using System;
-using System.Collections.Generic;
-using Cthangover.Core.Mods;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-
 namespace Cthangover.Validator
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using Cthangover.Core.Mods;
+    using Cthangover.Core.Mods.Compilation;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+
     /// <summary>
     /// Phase: Contracts. Parses every mod's declared C# sources with Roslyn and
     /// extracts typed property accesses (<c>GetInt("Turn")</c>,
@@ -39,14 +41,22 @@ namespace Cthangover.Validator
             { "SetLong", "long" },
         };
 
+        /// <summary>Uses the existing C# contract phase and registry identity.</summary>
         public string Id => "csharp_properties";
+        /// <summary>Uses the existing C# contract phase and registry identity.</summary>
         public ValidationPhase Phase => ValidationPhase.Contracts;
+        /// <summary>Uses the existing C# contract phase and registry identity.</summary>
         public int Order => 200;
+        /// <summary>Uses the existing C# contract phase and registry identity.</summary>
         public ValidationFeature Feature => ValidationFeature.CSharp;
 
-        /// <summary>Scans mod C# sources for DataBlob key usages and checks the keys against the persisted blobs, reporting unknown or mistyped keys.</summary>
+        /// <summary>
+        /// Scans compiled mod sources for property-bag usages against persisted and explicit schema keys.
+        /// Unknown reads and incompatible reader/writer types remain findings.
+        /// </summary>
         public void Validate(ValidationContext context)
         {
+            ValidationSchemaPropertyKeys.Declare(context);
             var usages = new List<CodePropertyUsage>();
             var literalCounts = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -54,7 +64,7 @@ namespace Cthangover.Validator
             {
                 context.ThrowIfCancellationRequested();
 
-                foreach (var file in CollectSources(mod))
+                foreach (var file in CollectSources(mod, context.CancellationToken))
                 {
                     context.ThrowIfCancellationRequested();
                     ParseSource(mod.Id, file.Path, file.Source, usages, literalCounts);
@@ -67,68 +77,14 @@ namespace Cthangover.Validator
             ReportUnusedWrites(context, usages, literalCounts);
         }
 
-        private static List<(string Path, string Source)> CollectSources(IModInfo mod)
+        private static List<(string Path, string Source)> CollectSources(IModInfo mod, CancellationToken cancellation)
         {
-            var result = new List<(string Path, string Source)>();
-            var provider = NestedFolders.Visible(mod);
-            if (provider == null)
-                return result;
+            // Match the compiler's declared source boundary, including recursive patterns,
+            // provider-relative paths, mounted suites and the compiler's fallback policy.
+            if (mod is not ModInfo info || info.FileProvider == null || info.Manifest?.Sources?.Count is not > 0)
+                return new List<(string, string)>();
 
-            var patterns = (mod as ModInfo)?.Manifest?.Sources;
-
-            if (patterns != null && patterns.Count > 0)
-            {
-                foreach (var pattern in patterns)
-                {
-                    var prefix = pattern;
-                    var suffix = "*.cs";
-                    var separator = pattern.LastIndexOf('/');
-                    if (separator >= 0)
-                    {
-                        prefix = pattern.Substring(0, separator);
-                        suffix = pattern.Substring(separator + 1);
-                    }
-
-                    foreach (var file in ModFileReader.ListFiles(provider, prefix, true))
-                    {
-                        if (!MatchesSource(file, suffix))
-                            continue;
-
-                        var source = provider.ReadFileText(file);
-                        if (source != null)
-                            result.Add((file, source));
-                    }
-                }
-            }
-
-            if (result.Count == 0)
-            {
-                foreach (var file in ModFileReader.ListFiles(provider, string.Empty, true))
-                {
-                    if (!file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    var source = provider.ReadFileText(file);
-                    if (source != null)
-                        result.Add((file, source));
-                }
-            }
-
-            return result;
-        }
-
-        private static bool MatchesSource(string file, string suffix)
-        {
-            if (!file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            if (suffix == "*" || suffix == "*.cs")
-                return true;
-
-            if (suffix.StartsWith("*.", StringComparison.Ordinal))
-                return file.EndsWith(suffix.Substring(1), StringComparison.OrdinalIgnoreCase);
-
-            return file.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
+            return ModSourceCollector.CollectSourceFiles(info, cancellation);
         }
 
         private static void ParseSource(

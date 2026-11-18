@@ -70,7 +70,7 @@ namespace Cthangover.Validator
         }
 
         /// <summary>
-        /// Registers a property key seen in JSON entity data. Used by the C#
+        /// Registers a property key declared by entity data or an explicit Values schema. Used by the C#
         /// strategy to distinguish declared properties from typos.
         /// </summary>
         public void AddDeclaredKey(string key)
@@ -86,7 +86,7 @@ namespace Cthangover.Validator
                 && list.Any(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
         }
 
-        /// <summary>True when the key was seen in any JSON entity or action Values list.</summary>
+        /// <summary>True when data or an explicit Values schema declares the property-bag key.</summary>
         public bool IsKeyDeclared(string key) => declaredKeys.Contains(key);
     }
 }
