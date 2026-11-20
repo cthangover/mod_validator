@@ -29,7 +29,7 @@
     <GodotDisabledSourceGenerators />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="tests/**/*.cs" Exclude="test_suites/**;integrations/**;**/bin/**;**/obj/**;**/.*/**">
+    <Compile Include="tests/**/*.cs" Exclude="test_suites/**;integrations/**;**/bin/**;**/obj/**;**/.*/**;test_suites/findings_review/**">
       <Link>%(Identity)</Link>
     </Compile>
   </ItemGroup>
