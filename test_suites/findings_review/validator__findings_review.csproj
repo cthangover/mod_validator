@@ -83,6 +83,9 @@
     <Reference Include="../../../interactive_base/dll/**/*.dll" Exclude="$(CthangoverSourceBinaryExcludes)">
       <Private>false</Private>
     </Reference>
+    <Reference Include="../../../../mods_private/nature_base/dll/**/*.dll" Exclude="$(CthangoverSourceBinaryExcludes)">
+      <Private>false</Private>
+    </Reference>
     <Reference Include="../../../../mods_private/scene3d_base/dll/**/*.dll" Exclude="$(CthangoverSourceBinaryExcludes)">
       <Private>false</Private>
     </Reference>
