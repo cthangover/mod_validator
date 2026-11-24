@@ -430,7 +430,7 @@ namespace Cthangover.Validator
                     context.Graph.AddReference(ValidationKind.Background, target, mod.Id, file, line);
                     break;
                 case PositionalReferenceKind.Scene:
-                    if (!SceneManager.IsNativeSceneName(target))
+                    if (!SceneManager.IsNativeSceneName(target) && !SceneRouteRegistry.TryGet(target, out _))
                         context.Graph.AddReference(ValidationKind.Scene, target, mod.Id, file, line);
                     break;
                 case PositionalReferenceKind.Music:
